@@ -27,9 +27,26 @@ namespace BulkDataImportPipeline.Utilities
                 string city = Cities[random.Next(Cities.Length)];
                 string country = Countries[random.Next(Countries.Length)];
                 DateTime signupDate = DateTime.UtcNow.AddDays(-random.Next(0, 1000));
-                bool isActive = random.Next(0, 10) > 1; // ~80% active
+                bool isActive = random.Next(0, 10) > 1;
 
-                writer.WriteLine($"{fullName},{email},{city},{country},{signupDate:yyyy-MM-dd},{isActive}");
+                // ~2% rows ko jaan-boojh kar kharab banate hain (validation test karne ke liye)
+                int badRowChance = random.Next(0, 100);
+
+                if (badRowChance < 1)
+                {
+                    // Khaali email
+                    writer.WriteLine($"{fullName},,{city},{country},{signupDate:yyyy-MM-dd},{isActive}");
+                }
+                else if (badRowChance < 2)
+                {
+                    // Ghalat date format
+                    writer.WriteLine($"{fullName},{email},{city},{country},NOT-A-DATE,{isActive}");
+                }
+                else
+                {
+                    // Normal valid row
+                    writer.WriteLine($"{fullName},{email},{city},{country},{signupDate:yyyy-MM-dd},{isActive}");
+                }
             }
         }
     }

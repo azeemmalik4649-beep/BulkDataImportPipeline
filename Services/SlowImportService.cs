@@ -62,6 +62,8 @@ namespace BulkDataImportPipeline.Services
     public class ImportResult
     {
         public int RowsInserted { get; set; }
+        public int RowsFailed { get; set; }
         public long ElapsedMilliseconds { get; set; }
+        public string? ErrorFilePath { get; set; }
     }
 }
