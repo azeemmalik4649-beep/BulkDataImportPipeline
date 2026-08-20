@@ -10,5 +10,6 @@ namespace BulkDataImportPipeline.Data
         }
 
         public DbSet<Customer> Customers { get; set; }
+        public DbSet<ImportJob> ImportJobs { get; set; }
     }
 }

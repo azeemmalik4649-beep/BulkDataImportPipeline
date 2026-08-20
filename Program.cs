@@ -11,6 +11,7 @@ builder.Services.AddScoped<SlowImportService>();
 builder.Services.AddScoped<ChannelImportService>();
 builder.Services.AddScoped<BulkCopyImportService>();
 builder.Services.AddScoped<ValidatedBulkCopyImportService>();
+builder.Services.AddScoped<ResumableImportService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

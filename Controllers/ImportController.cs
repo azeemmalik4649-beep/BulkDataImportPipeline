@@ -11,17 +11,19 @@ namespace BulkDataImportPipeline.Controllers
         private readonly ChannelImportService _channelImportService;
         private readonly BulkCopyImportService _bulkCopyImportService;
         private readonly ValidatedBulkCopyImportService _validatedImportService;
-
+        private readonly ResumableImportService _resumableImportService;
         public ImportController(
             SlowImportService slowImportService,
             ChannelImportService channelImportService,
             BulkCopyImportService bulkCopyImportService,
-            ValidatedBulkCopyImportService validatedImportService)
+            ValidatedBulkCopyImportService validatedImportService,
+            ResumableImportService resumableImportService)
         {
             _slowImportService = slowImportService;
             _channelImportService = channelImportService;
             _bulkCopyImportService = bulkCopyImportService;
             _validatedImportService = validatedImportService;
+            _resumableImportService = resumableImportService;
         }
 
         [HttpPost("slow")]
@@ -91,6 +93,32 @@ namespace BulkDataImportPipeline.Controllers
 
             return File(fileBytes, "text/csv", fileName);
         }
+
+
+        [HttpPost("resumable")]
+        public async Task<IActionResult> ImportResumable([FromQuery] string fileName)
+        {
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedFiles", fileName);
+            if (!System.IO.File.Exists(filePath))
+                return NotFound(new { Message = $"File not found: {filePath}" });
+
+            string errorFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "ErrorReports");
+
+            var result = await _resumableImportService.ImportCsvResumableAsync(filePath, errorFolderPath);
+
+            return Ok(new
+            {
+                Message = result.WasSkippedAsDuplicate ? "File already imported previously - skipped" : "Resumable import completed",
+                result.WasSkippedAsDuplicate,
+                result.ImportJobId,
+                result.RowsInserted,
+                result.RowsFailed,
+                result.ElapsedMilliseconds,
+                ElapsedSeconds = result.ElapsedMilliseconds / 1000.0,
+                result.ErrorFilePath
+            });
+        }
+
 
     }
 }
