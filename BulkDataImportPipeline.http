@@ -1,0 +1,6 @@
+@BulkDataImportPipeline_HostAddress = http://localhost:5252
+
+GET {{BulkDataImportPipeline_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
