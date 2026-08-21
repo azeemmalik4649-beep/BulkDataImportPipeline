@@ -39,29 +39,36 @@ namespace BulkDataImportPipeline.Services
 
             var producerTask = Task.Run(async () =>
             {
-                using var reader = new StreamReader(filePath);
-                string? headerLine = await reader.ReadLineAsync();
-
-                string? line;
-                while ((line = await reader.ReadLineAsync()) != null)
+                try
                 {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-                    var parts = line.Split(',');
+                    using var reader = new StreamReader(filePath);
+                    string? headerLine = await reader.ReadLineAsync();
 
-                    var customer = new Customer
+                    string? line;
+                    while ((line = await reader.ReadLineAsync()) != null)
                     {
-                        FullName = parts[0],
-                        Email = parts[1],
-                        City = parts[2],
-                        Country = parts[3],
-                        SignupDate = DateTime.Parse(parts[4], CultureInfo.InvariantCulture),
-                        IsActive = bool.Parse(parts[5])
-                    };
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+                        var parts = line.Split(',');
 
-                    await channel.Writer.WriteAsync(customer);
+                        var customer = new Customer
+                        {
+                            FullName = parts[0],
+                            Email = parts[1],
+                            City = parts[2],
+                            Country = parts[3],
+                            SignupDate = DateTime.Parse(parts[4], CultureInfo.InvariantCulture),
+                            IsActive = bool.Parse(parts[5])
+                        };
+
+                        await channel.Writer.WriteAsync(customer);
+                    }
+
+                    channel.Writer.Complete();
                 }
-
-                channel.Writer.Complete();
+                catch (Exception ex)
+                {
+                    channel.Writer.Complete(ex);
+                }
             });
 
             // Consumer: rows ko DataTable mein jama karta hai, batch-wise SqlBulkCopy karta hai

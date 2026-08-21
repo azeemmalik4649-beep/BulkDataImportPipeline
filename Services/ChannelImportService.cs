@@ -28,33 +28,41 @@ namespace BulkDataImportPipeline.Services
             // ---- PRODUCER: CSV parhta hai, channel mein daalta hai ----
             var producerTask = Task.Run(async () =>
             {
-                using var reader = new StreamReader(filePath);
-                string? headerLine = await reader.ReadLineAsync(); // header skip
-
-                string? line;
-                while ((line = await reader.ReadLineAsync()) != null)
+                try
                 {
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
+                    using var reader = new StreamReader(filePath);
+                    string? headerLine = await reader.ReadLineAsync(); // header skip
 
-                    var parts = line.Split(',');
-
-                    var customer = new Customer
+                    string? line;
+                    while ((line = await reader.ReadLineAsync()) != null)
                     {
-                        FullName = parts[0],
-                        Email = parts[1],
-                        City = parts[2],
-                        Country = parts[3],
-                        SignupDate = DateTime.Parse(parts[4], CultureInfo.InvariantCulture),
-                        IsActive = bool.Parse(parts[5])
-                    };
+                        if (string.IsNullOrWhiteSpace(line))
+                            continue;
 
-                    // Agar channel full hai (1000 items pehle se pending), to yahan wait karega
-                    await channel.Writer.WriteAsync(customer);
+                        var parts = line.Split(',');
+
+                        var customer = new Customer
+                        {
+                            FullName = parts[0],
+                            Email = parts[1],
+                            City = parts[2],
+                            Country = parts[3],
+                            SignupDate = DateTime.Parse(parts[4], CultureInfo.InvariantCulture),
+                            IsActive = bool.Parse(parts[5])
+                        };
+
+                        await channel.Writer.WriteAsync(customer);
+                    }
+
+                    // Producer ka kaam khatam - consumer ko signal do
+                    channel.Writer.Complete();
                 }
-
-                // Producer ka kaam khatam - consumer ko signal do
-                channel.Writer.Complete();
+                catch (Exception ex)
+                {
+                    // CRITICAL: agar kuch bhi galat ho, consumer ko exception ke saath signal do
+                    // taake wo hamesha ke liye wait na kare (silent hang se bachne ke liye)
+                    channel.Writer.Complete(ex);
+                }
             });
 
             // ---- CONSUMER: channel se rows uthata hai, batch mein insert karta hai ----
